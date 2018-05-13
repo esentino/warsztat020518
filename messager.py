@@ -19,13 +19,17 @@ def create_user(email, password):
     cursor = cnx.cursor()
     user = User.get_user_by_email(cursor, email)
     if user:
+        cursor.close()
+        cnx.close()
         raise Exception("User Exists")
     else:
         user = User()
         user.email = email
         user.set_password(password)
-        user.save_to_db()
-
+        user.save_to_db(cursor)
+        cnx.commit()
+        cursor.close()
+        cnx.close()
 
 def change_user_password(email, password, new_password):
     user = User.get_user_by_email()

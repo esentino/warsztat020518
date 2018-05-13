@@ -1,3 +1,4 @@
+from clcrypto import password_hash
 from .message import Message
 
 
@@ -11,7 +12,7 @@ PRIMARY KEY (id)
 );
 """
 class User:
-    __id = None
+    __id = -1
     username = None
     __hashed_password = None
     email = None
@@ -29,18 +30,26 @@ class User:
             loaded_user.__hashed_password = data[3]
             return loaded_user
 
-    def save_to_db(self):
-        pass
+    def save_to_db(self, cursor):
+        if self.__id == -1:
+            sql = """
+                INSERT INTO Users(username, email, hashed_password)
+                VALUES (%s, %s, %s) RETURNING id;
+            """
+            cursor.execute(sql, (self.username, self.email, self.hashed_password))
+            (id,) = cursor.fetchone()
+            self.__id = id
+            return True
 
     def set_password(self, new_password):
-        self.__hashed_password=new_password
+        self.__hashed_password=password_hash(new_password)
 
     @property
     def hashed_password(self):
         return self.__hashed_password
 
     def delete(self):
-        pass
+        raise NotImplementedError
 
     @staticmethod
     def get_all_users():

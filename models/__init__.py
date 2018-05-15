@@ -21,6 +21,12 @@ class User:
 
     @staticmethod
     def get_user_by_email(cursor, email):
+        """
+        Zwraca użytkownika po jego adresie email
+        :param cursor:
+        :param email:
+        :return:
+        """
         sql = "SELECT id, username, email, hashed_password FROM users WHERE email=%s"
         cursor.execute(sql, (email,))  # (email, ) - bo tworzymy krotkę
         data = cursor.fetchone()
@@ -33,6 +39,11 @@ class User:
             return loaded_user
 
     def save_to_db(self, cursor):
+        """
+        Zapisuje/Aktualizuje użytkownika do bazy danych
+        :param cursor:
+        :return:
+        """
         if self.__id == -1:
             sql = """
                 INSERT INTO Users(username, email, hashed_password)
@@ -43,21 +54,43 @@ class User:
             self.__id = id
             return True
 
+        sql = """
+            UPDATE Users 
+            SET username = %s, email = %s, hashed_password = %s
+            WHERE id = %s"""
+        cursor.execute(sql, (self.username, self.email, self.hashed_password, self.__id))
+        return True
+
     def set_password(self, new_password):
+        """
+        Ustawia nowe hasło użytkownikowi
+        :param new_password:
+        :return:
+        """
         self.__hashed_password=password_hash(new_password)
 
     @property
     def hashed_password(self):
+        """zwraca zahashowane hasło"""
         return self.__hashed_password
 
     def delete(self, cursor):
+        """
+        Usuwa użytkownika oraz ustawia jego id na -1
+        :param cursor:
+        :return:
+        """
         sql = """DELETE FROM users WHERE email = %s"""
         cursor.execute(sql, (self.email,))  # (email, ) - bo tworzymy krotkę
         self.__id = -1
 
-
     @staticmethod
     def get_all_users(cursor):
+        """
+        Zwraca listę użytkowników
+        :param cursor:
+        :return:
+        """
         sql = """ SELECT id, username, email, hashed_password FROM users """
         cursor.execute(sql)
         user_list = []

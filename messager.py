@@ -1,12 +1,18 @@
+"""Messanger."""
 from clcrypto import check_password
-from models import User, Message
+from models import User
 from psycopg2 import connect, OperationalError
 
 
-def create_connection(db_name = "exercises_db"):
+def create_connection(db_name="exercises_db"):
+    """
+    Tworzenie połączenia do bazy danych
+    :param db_name:
+    :return:
+    """
     username = "postgres"
     password = "coderslab"
-    host= "localhost"
+    host = "localhost"
 
     try:
         connection = connect(user=username, password=password, host=host, dbname=db_name)
@@ -22,21 +28,24 @@ def create_user(email, password):
     :param password: hasło
     :return:
     """
-    cnx = create_connection()
-    cursor = cnx.cursor()
-    user = User.get_user_by_email(cursor, email)
-    if user:
-        cursor.close()
-        cnx.close()
-        raise Exception("User Exists")
-    else:
-        user = User()
-        user.email = email
-        user.set_password(password)
-        user.save_to_db(cursor)
-        cnx.commit()
-        cursor.close()
-        cnx.close()
+    try:
+        cnx = create_connection()
+        cursor = cnx.cursor()
+        user = User.get_user_by_email(cursor, email)
+        if user:
+            cursor.close()
+            cnx.close()
+            raise Exception("User Exists")
+        else:
+            user = User()
+            user.email = email
+            user.set_password(password)
+            user.save_to_db(cursor)
+            cnx.commit()
+            cursor.close()
+            cnx.close()
+    except OperationalError:
+        print("Problem z połączeniem do bazy danych")
 
 def change_user_password(email, password, new_password):
     """
@@ -46,11 +55,18 @@ def change_user_password(email, password, new_password):
     :param new_password: nowe hasło
     :return:
     """
-    user = User.get_user_by_email()
-    if user and check_password(password, user.hash_password) and len(new_password) > 8:
-        user.set_password(new_password)
-        user.save_to_db()
-
+    try:
+        cnx = create_connection()
+        cursor = cnx.cursor()
+        user = User.get_user_by_email(cursor, email)
+        if user and check_password(password, user.hashed_password) and len(new_password) > 8:
+            user.set_password(new_password)
+            user.save_to_db(cursor)
+            cnx.commit()
+        cursor.close()
+        cnx.close()
+    except OperationalError:
+        print("Problem z połączeniem do bazy danych")
 
 def delete_user(email, password):
     """
@@ -59,9 +75,17 @@ def delete_user(email, password):
     :param password: hasło
     :return: None
     """
-    user = User.get_user_by_email(email)
-    if user and check_password(password, user.hashed_password):
-        user.delete()
+    try:
+        cnx = create_connection()
+        cursor = cnx.cursor()
+        user = User.get_user_by_email(cursor, email)
+        if user and check_password(password, user.hashed_password):
+            user.delete(cursor)
+            cnx.commit()
+        cursor.close()
+        cnx.close()
+    except OperationalError:
+        print("Problem z połączeniem do bazy danych")
 
 
 def display_all_user():
@@ -69,16 +93,23 @@ def display_all_user():
     Wyświetlanie wszystkich użytkowników.
     :return: None
     """
-    user_list = User.get_all_users()
-    for user in user_list:
-        print(" %s %s " % (user.username, user.email))
+    try:
+        cnx = create_connection()
+        cursor = cnx.cursor()
+        user_list = User.get_all_users(cursor)
+        for user in user_list:
+            print(" %s %s " % (user.username, user.email))
+        cursor.close()
+        cnx.close()
+    except OperationalError:
+        print("Problem z połączeniem do bazy danych")
 
 
-user_email = "jan@pl.pl"
-user_password = "niepamietam"
-user_new_password = "juzpamietam"
-create_user(user_email, user_password)
+USER_MAIL = "jan@pl.pl"
+USER_PASSWORD = "niepamietam"
+USER_NEW_PASSWORD = "juzpamietam"
+create_user(USER_MAIL, USER_PASSWORD)
 display_all_user()
-change_user_password(user_email, user_email, user_new_password)
-delete_user(user_email, user_new_password)
+change_user_password(USER_MAIL, USER_MAIL, USER_NEW_PASSWORD)
+delete_user(USER_MAIL, USER_NEW_PASSWORD)
 display_all_user()

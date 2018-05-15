@@ -11,6 +11,8 @@ hashed_password varchar(255),
 PRIMARY KEY (id)
 );
 """
+
+
 class User:
     __id = -1
     username = None
@@ -48,9 +50,22 @@ class User:
     def hashed_password(self):
         return self.__hashed_password
 
-    def delete(self):
-        raise NotImplementedError
+    def delete(self, cursor):
+        sql = """DELETE FROM users WHERE email = %s"""
+        cursor.execute(sql, (self.email,))  # (email, ) - bo tworzymy krotkę
+        self.__id = -1
+
 
     @staticmethod
-    def get_all_users():
-        return [User(), User()]
+    def get_all_users(cursor):
+        sql = """ SELECT id, username, email, hashed_password FROM users """
+        cursor.execute(sql)
+        user_list = []
+        for user_row in cursor:
+            user = User()
+            user.__id = user_row[0]
+            user.username = user_row[1]
+            user.email = user_row[2]
+            user.__hashed_password = user_row[3]
+            user_list.append(user)
+        return user_list
